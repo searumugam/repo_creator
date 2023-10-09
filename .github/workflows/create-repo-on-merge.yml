@@ -13,16 +13,16 @@ jobs:
       - name: Check if PR was Merged
         id: pr-merged
         run: echo "::set-output name=merged::${{ github.event.pull_request.merged }}"
-        
+
       - name: Conditional Step
         if: steps.pr-merged.outputs.merged == 'true'
         run: echo "This step will only run if the PR was merged"
-        
+
       - name: Checkout Source Branch
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-          
+
       - name: Read JSON File
         id: read-json
         run: |
@@ -44,7 +44,7 @@ jobs:
           echo "::set-output name=repo_description::$REPO_DESC"
           echo "::set-output name=owner_email::$OWNER_EMAIL"
           echo "::set-output name=collaborators::$COLLABORATORS"
-        
+
       - name: Create Repository
         id: create-repo
         env:
