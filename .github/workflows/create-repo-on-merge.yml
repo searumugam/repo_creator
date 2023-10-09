@@ -1,0 +1,69 @@
+name: Create Project Repository
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  create-repo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if PR was Merged
+        id: pr-merged
+        run: echo "::set-output name=merged::${{ github.event.pull_request.merged }}"
+        
+      - name: Conditional Step
+        if: steps.pr-merged.outputs.merged == 'true'
+        run: echo "This step will only run if the PR was merged"
+        
+      - name: Checkout Source Branch
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          
+      - name: Read JSON File
+        id: read-json
+        run: |
+          JSON_FILE=$(find . -name 'nvbugs*.txt' | head -n 1)  # Find the first matching file
+          JSON_CONTENT=$(cat "$JSON_FILE")
+          echo "::set-output name=json::${JSON_CONTENT}"
+        working-directory: ${{ github.workspace }}
+
+      - name: Parse JSON Data
+        id: parse-json
+        run: |
+          REPO_NAME=$(echo "${{ steps.read-json.outputs.json }}" | jq -r '.repository_name')
+          ORG_NAME=$(echo "${{ steps.read-json.outputs.json }}" | jq -r '.organization_name')
+          REPO_DESC=$(echo "${{ steps.read-json.outputs.json }}" | jq -r '.repository_description')
+          OWNER_EMAIL=$(echo "${{ steps.read-json.outputs.json }}" | jq -r '.nvidia_uploader_email_id')
+          COLLABORATORS=$(echo "${{ steps.read-json.outputs.json }}" | jq -r '.user_roles[] | select(.role == "write") | .useremail')
+          echo "::set-output name=repo_name::$REPO_NAME"
+          echo "::set-output name=org_name::$ORG_NAME"
+          echo "::set-output name=repo_description::$REPO_DESC"
+          echo "::set-output name=owner_email::$OWNER_EMAIL"
+          echo "::set-output name=collaborators::$COLLABORATORS"
+        
+      - name: Create Repository
+        id: create-repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ORG_NAME="${{ steps.parse-json.outputs.org_name }}"
+          REPO_NAME="${{ steps.parse-json.outputs.repo_name }}"
+          REPO_DESC="${{ steps.parse-json.outputs.repo_description }}"
+          OWNER_EMAIL="${{ steps.parse-json.outputs.owner_email }}"
+          COLLABORATORS="${{ steps.parse-json.outputs.collaborators }}"
+          gh repo create "${ORG_NAME}/${REPO_NAME}" --description "${REPO_DESC}" --private
+          gh repo transfer "${ORG_NAME}/${REPO_NAME}" --confirm
+          gh repo transfer "${ORG_NAME}/${REPO_NAME}" --new-owner "${OWNER_EMAIL}"
+          for COLLABORATOR in ${COLLABORATORS}; do
+            gh repo collaborator add "${ORG_NAME}/${REPO_NAME}" "${COLLABORATOR}" --write
+          done
+
+      - name: Set Output Variables
+        run: |
+          REPO_NAME="${{ steps.parse-json.outputs.repo_name }}"
+          ORG_NAME="${{ steps.parse-json.outputs.org_name }}"
+          echo "::set-output name=created_repo::${ORG_NAME}/${REPO_NAME}"
