@@ -1,4 +1,4 @@
-name: Create Project Repository
+name: GitHub Onboard Automation
 
 on:
   pull_request:
@@ -13,16 +13,16 @@ jobs:
       - name: Check if PR was Merged
         id: pr-merged
         run: echo "::set-output name=merged::${{ github.event.pull_request.merged }}"
-        
+
       - name: Conditional Step
         if: steps.pr-merged.outputs.merged == 'true'
         run: echo "This step will only run if the PR was merged"
-        
+
       - name: Checkout Source Branch
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-          
+
       - name: Read JSON File
         id: read-json
         run: |
@@ -30,21 +30,41 @@ jobs:
           JSON_CONTENT=$(cat "$JSON_FILE")
           echo "::set-output name=json::${JSON_CONTENT}"
         working-directory: ${{ github.workspace }}
+        
+      - name: Debug JSON File Content
+        run: |
+          JSON_FILE=$(find . -name 'nvbugs*.txt' | head -n 1)
+          JSON_CONTENT=$(cat "$JSON_FILE")
+          echo "File Content:"
+          echo "$JSON_CONTENT"
+          working-directory: ${{ github.workspace }}
 
       - name: Parse JSON Data
         id: parse-json
         run: |
-          REPO_NAME=$(echo "${{ steps.read-json.outputs.json }}" | jq -r '.repository_name')
-          ORG_NAME=$(echo "${{ steps.read-json.outputs.json }}" | jq -r '.organization_name')
-          REPO_DESC=$(echo "${{ steps.read-json.outputs.json }}" | jq -r '.repository_description')
-          OWNER_EMAIL=$(echo "${{ steps.read-json.outputs.json }}" | jq -r '.nvidia_uploader_email_id')
-          COLLABORATORS=$(echo "${{ steps.read-json.outputs.json }}" | jq -r '.user_roles[] | select(.role == "write") | .useremail')
-          echo "::set-output name=repo_name::$REPO_NAME"
-          echo "::set-output name=org_name::$ORG_NAME"
-          echo "::set-output name=repo_description::$REPO_DESC"
-          echo "::set-output name=owner_email::$OWNER_EMAIL"
-          echo "::set-output name=collaborators::$COLLABORATORS"
-        
+          JSON_CONTENT="${{ steps.read-json.outputs.json }}"
+          echo "JSON Content: $JSON_CONTENT"  # Debugging line
+          if [[ -n "$JSON_CONTENT" && "$JSON_CONTENT" != "null" ]]; then
+            REPO_NAME=$(echo "$JSON_CONTENT" | jq -r '.repository_name')
+            ORG_NAME=$(echo "$JSON_CONTENT" | jq -r '.organization_name')
+            REPO_DESC=$(echo "$JSON_CONTENT" | jq -r '.repository_description')
+            OWNER_EMAIL=$(echo "$JSON_CONTENT" | jq -r '.nvidia_uploader_email_id')
+            COLLABORATORS=$(echo "$JSON_CONTENT" | jq -r '.user_roles[] | select(.role == "write") | .useremail')
+            echo "::set-output name=repo_name::$REPO_NAME"
+            echo "::set-output name=org_name::$ORG_NAME"
+            echo "::set-output name=repo_description::$REPO_DESC"
+            echo "::set-output name=owner_email::$OWNER_EMAIL"
+            echo "::set-output name=collaborators::$COLLABORATORS"
+          else
+            echo "JSON data not found or invalid."
+            echo "::set-output name=repo_name::"
+            echo "::set-output name=org_name::"
+            echo "::set-output name=repo_description::"
+            echo "::set-output name=owner_email::"
+            echo "::set-output name=collaborators::"
+          fi
+
+
       - name: Create Repository
         id: create-repo
         env:
