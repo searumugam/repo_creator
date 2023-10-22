@@ -47,7 +47,7 @@ jobs:
       - name: Parse JSON Data
         id: parse-json
         run: |
-          JSON_CONTENT="{{ steps.read-json.outputs.json }}"
+          JSON_CONTENT="${{ steps.read-json.outputs.json }}"
           echo "JSON Content: $JSON_CONTENT"  # Debugging line
           if [[ -n "$JSON_CONTENT" && "$JSON_CONTENT" != "null" ]]; then
             REPO_NAME=$(echo "$JSON_CONTENT" | jq -r '.repository_name')
