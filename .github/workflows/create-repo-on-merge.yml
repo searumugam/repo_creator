@@ -35,6 +35,7 @@ jobs:
         id: parse-json
         run: |
           JSON_CONTENT="${{ steps.read-json.outputs.json }}"
+          echo "JSON Content: $JSON_CONTENT"  # Debugging line
           if [[ -n "$JSON_CONTENT" && "$JSON_CONTENT" != "null" ]]; then
             REPO_NAME=$(echo "$JSON_CONTENT" | jq -r '.repository_name')
             ORG_NAME=$(echo "$JSON_CONTENT" | jq -r '.organization_name')
@@ -54,6 +55,7 @@ jobs:
             echo "::set-output name=owner_email::"
             echo "::set-output name=collaborators::"
           fi
+
 
       - name: Create Repository
         id: create-repo
