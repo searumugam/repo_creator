@@ -30,11 +30,11 @@ jobs:
 
       - name: Read JSON File
         id: read-json
+        working-directory: ${{ github.workspace }}
         run: |
           JSON_FILE=$(find . -name 'nvbugs*.txt' | head -n 1)  # Find the first matching file
           JSON_CONTENT=$(cat "$JSON_FILE")
           echo "::set-output name=json::${JSON_CONTENT}"
-        working-directory: ${{ github.workspace }}
 
       - name: Debug File Contents
         run: |
@@ -53,6 +53,8 @@ jobs:
       - name: Parse JSON Data
         id: parse-json
         run: |
+          ls -la
+          find .
           JSON_CONTENT=$(cat "$JSON_FILE")
           echo "JSON Content (before): $JSON_CONTENT"  # Debugging line
           JSON_CONTENT="${{ steps.read-json.outputs.json }}"
