@@ -4,11 +4,6 @@ on:
   pull_request:
     types:
       - closed
-  workflow_dispatch:  # For manual trigger of workflow
-    inputs:
-      source_branch:
-        description: 'Source Branch'
-        required: false
 
 jobs:
   create-repo:
@@ -26,21 +21,15 @@ jobs:
       - name: Checkout Source Branch
         uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.inputs.source_branch }}
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Read JSON File
         id: read-json
-        working-directory: ${{ github.workspace }}
         run: |
           JSON_FILE=$(find . -name 'nvbugs*.txt' | head -n 1)  # Find the first matching file
           JSON_CONTENT=$(cat "$JSON_FILE")
           echo "::set-output name=json::${JSON_CONTENT}"
-
-      - name: Debug File Contents
-        run: |
-          ls -la
-          find .
-          cat nvbugs*.txt
+        working-directory: ${{ github.workspace }}
 
       - name: Debug JSON File Content
         run: |
@@ -53,32 +42,34 @@ jobs:
       - name: Parse JSON Data
         id: parse-json
         run: |
-          ls -la
-          find .
-          JSON_CONTENT=$(cat "$JSON_FILE")
-          echo "JSON Content (before): $JSON_CONTENT"  # Debugging line
-          JSON_CONTENT="${{ steps.read-json.outputs.json }}"
-          echo "JSON Content (after): $JSON_CONTENT"  # Debugging line
-          if [[ -n "$JSON_CONTENT" && "$JSON_CONTENT" != "null" ]]; then
-            REPO_NAME=$(echo "$JSON_CONTENT" | jq -r '.repository_name')
-            ORG_NAME=$(echo "$JSON_CONTENT" | jq -r '.organization_name')
-            REPO_DESC=$(echo "$JSON_CONTENT" | jq -r '.repository_description')
-            OWNER_EMAIL=$(echo "$JSON_CONTENT" | jq -r '.nvidia_uploader_email_id')
-            COLLABORATORS=$(echo "$JSON_CONTENT" | jq -r '.user_roles[] | select(.role == "write") | .useremail')
-            echo "::set-output name=repo_name::$REPO_NAME"
-            echo "::set-output name=org_name::$ORG_NAME"
-            echo "::set-output name=repo_description::$REPO_DESC"
-            echo "::set-output name=owner_email::$OWNER_EMAIL"
-            echo "::set-output name=collaborators::$COLLABORATORS"
+          JSON_FILE=$(find . -name 'nvbugs*.txt' | head -n 1)  # Find the first matching file
+          if [ -z "$JSON_FILE" ]; then
+            echo "No 'nvbugs*.txt' file found in the current directory."
           else
-            echo "JSON data not found or invalid."
-            echo "::set-output name=repo_name::"
-            echo "::set-output name=org_name::"
-            echo "::set-output name=repo_description::"
-            echo "::set-output name=owner_email::"
-            echo "::set-output name=collaborators::"
+            JSON_CONTENT=$(cat "$JSON_FILE")
+            echo "JSON Content (before): $JSON_CONTENT"  # Debugging line
+            JSON_CONTENT="${{ steps.read-json.outputs.json }}"
+            echo "JSON Content (after): $JSON_CONTENT"  # Debugging line
+            if [[ -n "$JSON_CONTENT" && "$JSON_CONTENT" != "null" ]]; then
+              REPO_NAME=$(echo "$JSON_CONTENT" | jq -r '.repository_name')
+              ORG_NAME=$(echo "$JSON_CONTENT" | jq -r '.organization_name')
+              REPO_DESC=$(echo "$JSON_CONTENT" | jq -r '.repository_description')
+              OWNER_EMAIL=$(echo "$JSON_CONTENT" | jq -r '.nvidia_uploader_email_id')
+              COLLABORATORS=$(echo "$JSON_CONTENT" | jq -r '.user_roles[] | select(.role == "write") | .useremail')
+              echo "::set-output name=repo_name::$REPO_NAME"
+              echo "::set-output name=org_name::$ORG_NAME"
+              echo "::set-output name=repo_description::$REPO_DESC"
+              echo "::set-output name=owner_email::$OWNER_EMAIL"
+              echo "::set-output name=collaborators::$COLLABORATORS"
+            else
+              echo "JSON data not found or invalid."
+              echo "::set-output name=repo_name::"
+              echo "::set-output name=org_name::"
+              echo "::set-output name=repo_description::"
+              echo "::set-output name=owner_email::"
+              echo "::set-output name=collaborators::"
+            fi
           fi
-
 
       - name: Create Repository
         id: create-repo
