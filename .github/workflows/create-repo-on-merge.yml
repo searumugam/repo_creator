@@ -30,6 +30,14 @@ jobs:
           JSON_CONTENT=$(cat "$JSON_FILE")
           echo "::set-output name=json::${JSON_CONTENT}"
         working-directory: ${{ github.workspace }}
+        
+      - name: Debug JSON File Content
+        run: |
+          JSON_FILE=$(find . -name 'nvbugs*.txt' | head -n 1)
+          JSON_CONTENT=$(cat "$JSON_FILE")
+          echo "File Content:"
+          echo "$JSON_CONTENT"
+          working-directory: ${{ github.workspace }}
 
       - name: Parse JSON Data
         id: parse-json
