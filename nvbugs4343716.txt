@@ -1,7 +1,7 @@
 {
   "swipat_link": "https://nvbugswb.nvidia.com/NvBugs5/SWBug.aspx?bugid=4044295&cmtNo=",
   "organization_name": "NVIDIA",
-  "repository_name": "https://github.com/searumugam/testrepo",
+  "repository_name": "searumugam/testrepo",
   "repository_description": "Testing nvbug automated github initialization.",
   "make_public_date": "2023-10-25",
   "nvidia_uploader_email_id": "searumugam@nvidia.com",
