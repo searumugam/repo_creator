@@ -4,7 +4,12 @@ on:
   pull_request:
     types:
       - closed
-
+  workflow_dispatch:  # For manual trigger of workflow
+    inputs:
+      source_branch:
+        description: 'Source Branch'
+        required: false
+        
 jobs:
   create-repo:
     runs-on: ubuntu-latest
@@ -21,7 +26,7 @@ jobs:
       - name: Checkout Source Branch
         uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.inputs.source_branch }}
 
       - name: Read JSON File
         id: read-json
