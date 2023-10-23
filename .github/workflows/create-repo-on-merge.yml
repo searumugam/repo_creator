@@ -33,7 +33,7 @@ jobs:
         run: |
           JSON_FILE=$(find . -name 'nvbugs*.txt' | head -n 1)  # Find the first matching file
           JSON_CONTENT=$(cat "$JSON_FILE")
-          echo "json=${JSON_CONTENT}" >> $GITHUB_ENV
+          echo "$JSON_CONTENT" >> $GITHUB_ENV
         working-directory: ${{ github.workspace }}
 
       - name: Debug JSON File Content
@@ -52,7 +52,7 @@ jobs:
             echo "No 'nvbugs*.txt' file found in the current directory."
           else
             JSON_CONTENT=$(cat "$JSON_FILE")
-            echo "JSON_CONTENT=${JSON_CONTENT}" >> $GITHUB_ENV
+            echo "$JSON_CONTENT" >> $GITHUB_ENV
             echo "JSON Content (before): $JSON_CONTENT"  # Debugging line
             if [[ -n "$JSON_CONTENT" && "$JSON_CONTENT" != "null" ]]; then
               REPO_NAME=$(echo "$JSON_CONTENT" | jq -r '.repository_name')
@@ -60,11 +60,11 @@ jobs:
               REPO_DESC=$(echo "$JSON_CONTENT" | jq -r '.repository_description')
               OWNER_EMAIL=$(echo "$JSON_CONTENT" | jq -r '.nvidia_uploader_email_id')
               COLLABORATORS=$(echo "$JSON_CONTENT" | jq -r '.user_roles[] | select(.role == "write") | .useremail')
-              echo "REPO_NAME=${REPO_NAME}" >> $GITHUB_ENV
-              echo "ORG_NAME=${ORG_NAME}" >> $GITHUB_ENV
-              echo "REPO_DESC=${REPO_DESC}" >> $GITHUB_ENV
-              echo "OWNER_EMAIL=${OWNER_EMAIL}" >> $GITHUB_ENV
-              echo "COLLABORATORS=${COLLABORATORS}" >> $GITHUB_ENV
+              echo "$REPO_NAME" >> $GITHUB_ENV
+              echo "$ORG_NAME" >> $GITHUB_ENV
+              echo "$REPO_DESC" >> $GITHUB_ENV
+              echo "$OWNER_EMAIL" >> $GITHUB_ENV
+              echo "$COLLABORATORS" >> $GITHUB_ENV
             else
               echo "JSON data not found or invalid."
             fi
