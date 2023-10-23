@@ -9,7 +9,7 @@ on:
       source_branch:
         description: 'Source Branch'
         required: false
-        
+
 jobs:
   create-repo:
     runs-on: ubuntu-latest
@@ -17,10 +17,10 @@ jobs:
     steps:
       - name: Check if PR was Merged
         id: pr-merged
-        run: echo "::set-output name=merged::${{ github.event.pull_request.merged }}"
+        run: echo "merged=${{ github.event.pull_request.merged }}" >> $GITHUB_ENV
 
       - name: Conditional Step
-        if: steps.pr-merged.outputs.merged == 'true'
+        if: env.merged == 'true'
         run: echo "This step will only run if the PR was merged"
 
       - name: Checkout Source Branch
@@ -33,7 +33,7 @@ jobs:
         run: |
           JSON_FILE=$(find . -name 'nvbugs*.txt' | head -n 1)  # Find the first matching file
           JSON_CONTENT=$(cat "$JSON_FILE")
-          echo "::set-output name=json::${JSON_CONTENT}"
+          echo "json_content=${JSON_CONTENT}" >> $GITHUB_ENV
         working-directory: ${{ github.workspace }}
 
       - name: Debug JSON File Content
@@ -42,7 +42,7 @@ jobs:
           JSON_CONTENT=$(cat "$JSON_FILE")
           echo "File Content:"
           echo "$JSON_CONTENT"
-        working-directory: ${{ github.workspace }}
+          working-directory: ${{ github.workspace }}
 
       - name: Parse JSON Data
         id: parse-json
@@ -59,18 +59,13 @@ jobs:
               REPO_DESC=$(echo "$JSON_CONTENT" | jq -r '.repository_description')
               OWNER_EMAIL=$(echo "$JSON_CONTENT" | jq -r '.nvidia_uploader_email_id')
               COLLABORATORS=$(echo "$JSON_CONTENT" | jq -r '.user_roles[] | select(.role == "write") | .useremail')
-              echo "::set-output name=repo_name::$REPO_NAME"
-              echo "::set-output name=org_name::$ORG_NAME"
-              echo "::set-output name=repo_description::$REPO_DESC"
-              echo "::set-output name=owner_email::$OWNER_EMAIL"
-              echo "::set-output name=collaborators::$COLLABORATORS"
+              echo "repo_name=${REPO_NAME}" >> $GITHUB_ENV
+              echo "org_name=${ORG_NAME}" >> $GITHUB_ENV
+              echo "repo_description=${REPO_DESC}" >> $GITHUB_ENV
+              echo "owner_email=${OWNER_EMAIL}" >> $GITHUB_ENV
+              echo "collaborators=${COLLABORATORS}" >> $GITHUB_ENV
             else
               echo "JSON data not found or invalid."
-              echo "::set-output name=repo_name::"
-              echo "::set-output name=org_name::"
-              echo "::set-output name=repo_description::"
-              echo "::set-output name=owner_email::"
-              echo "::set-output name=collaborators::"
             fi
           fi
 
@@ -79,11 +74,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ORG_NAME="${{ steps.parse-json.outputs.org_name }}"
-          REPO_NAME="${{ steps.parse-json.outputs.repo_name }}"
-          REPO_DESC="${{ steps.parse-json.outputs.repo_description }}"
-          OWNER_EMAIL="${{ steps.parse-json.outputs.owner_email }}"
-          COLLABORATORS="${{ steps.parse-json.outputs.collaborators }}"
+          ORG_NAME="${{ env.org_name }}"
+          REPO_NAME="${{ env.repo_name }}"
+          REPO_DESC="${{ env.repo_description }}"
+          OWNER_EMAIL="${{ env.owner_email }}"
+          COLLABORATORS="${{ env.collaborators }}"
           gh repo create "${ORG_NAME}/${REPO_NAME}" --description "${REPO_DESC}" --private
           gh repo transfer "${ORG_NAME}/${REPO_NAME}" --confirm
           gh repo transfer "${ORG_NAME}/${REPO_NAME}" --new-owner "${OWNER_EMAIL}"
@@ -93,6 +88,6 @@ jobs:
 
       - name: Set Output Variables
         run: |
-          REPO_NAME="${{ steps.parse-json.outputs.repo_name }}"
-          ORG_NAME="${{ steps.parse-json.outputs.org_name }}"
-          echo "::set-output name=created_repo::${ORG_NAME}/${REPO_NAME}"
+          REPO_NAME="${{ env.repo_name }}"
+          ORG_NAME="${{ env.org_name }}"
+          echo "created_repo=${ORG_NAME}/${REPO_NAME}" >> $GITHUB_ENV
